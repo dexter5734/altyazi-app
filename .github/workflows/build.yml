@@ -15,7 +15,7 @@ jobs:
       - name: Repo'yu çek
         uses: actions/checkout@v4
 
-      - name: Java kur
+      - name: Java kur (Flutter/Gradle için ŞART)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -27,8 +27,12 @@ jobs:
           flutter-version: '3.24.5'
           channel: 'stable'
 
-      - name: Native Android projesini oluştur
-        run: flutter create .
+      - name: Native Android projesini (temiz klasörde) oluştur
+        run: |
+          TMP=$(mktemp -d)
+          flutter create --org com.example --project-name altyazi_app "$TMP/altyazi_tmp"
+          cp -r "$TMP/altyazi_tmp/android" android
+          rm -rf "$TMP"
 
       - name: Bağımlılıkları indir
         run: flutter pub get

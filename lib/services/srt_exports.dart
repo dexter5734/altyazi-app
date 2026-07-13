@@ -2,7 +2,6 @@ import '../models/altyazi.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
-// Milisaniyeyi SRT zaman formatına çevir: 2500 -> "00:00:02,500"
 String _msSrtFormat(int ms) {
   final saniyeTam = ms ~/ 1000;
   final msKalan = ms % 1000;
@@ -15,7 +14,6 @@ String _msSrtFormat(int ms) {
          '${msKalan.toString().padLeft(3, '0')}';
 }
 
-// Tüm altyazıları SRT metnine çevir
 String srtUret(List<Altyazi> liste) {
   final buf = StringBuffer();
   final sirali = List<Altyazi>.from(liste)
@@ -26,12 +24,11 @@ String srtUret(List<Altyazi> liste) {
     buf.writeln('${i + 1}');
     buf.writeln('${_msSrtFormat(a.baslangic)} --> ${_msSrtFormat(a.bitis)}');
     buf.writeln(a.metin);
-    buf.writeln(); // boş satır
+    buf.writeln();
   }
   return buf.toString();
 }
 
-// SRT dosyasını kaydet ve yolunu döndür
 Future<String> srtKaydet(List<Altyazi> liste) async {
   final dir = await getApplicationDocumentsDirectory();
   final dosya = File('${dir.path}/altyazi.srt');

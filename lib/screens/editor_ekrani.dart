@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:io';
 import '../models/altyazi.dart';
 import '../services/srt_exports.dart';
 
@@ -16,11 +17,8 @@ class _EditorEkraniState extends State<EditorEkrani> {
   List<Altyazi> _altyazilar = [];
   int _sonId = 0;
 
-  // Yeni satır eklerken kullanılan geçici değerler
   String _yeniMetin = '';
   int? _baslangicMs;
-
-  // Senkron için pozisyon
   int _aktifPozisyonMs = 0;
 
   bool get _videoHazir => _kontrolcu?.value.isInitialized ?? false;
@@ -52,7 +50,6 @@ class _EditorEkraniState extends State<EditorEkrani> {
     super.dispose();
   }
 
-  // Mevcut pozisyonda gösterilecek altyazıyı bul
   Altyazi? get _aktifAltyazi {
     for (final a in _altyazilar) {
       if (a.iceriyorMu(_aktifPozisyonMs)) return a;
@@ -60,20 +57,17 @@ class _EditorEkraniState extends State<EditorEkrani> {
     return null;
   }
 
-  // "BAŞLA" — şimdiki zamanı başlangıç yap
   void _baslaYakala() {
     if (!_videoHazir) return;
-    setState(() => _baslangicMs = _baslangicMs == null
-        ? _aktifPozisyonMs
-        : null); // tekrar basınca sıfırla
+    setState(() {
+      _baslangicMs = _baslangicMs == null ? _aktifPozisyonMs : null;
+    });
   }
 
-  // "BİTİR" — şimdiki zamanı bitiş yapıp satırı ekle
   void _bitirVeEkle() {
     if (!_videoHazir || _baslangicMs == null || _yeniMetin.isEmpty) return;
     final bitis = _aktifPozisyonMs;
     if (bitis <= _baslangicMs!) return;
-
     setState(() {
       _altyazilar.add(Altyazi(
         id: ++_sonId,
@@ -101,7 +95,7 @@ class _EditorEkraniState extends State<EditorEkrani> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Altyazı Stüdyoso'),
+        title: const Text('Altyazı Stüdyosu'),
         actions: [
           IconButton(
             icon: const Icon(Icons.download),
@@ -128,7 +122,6 @@ class _EditorEkraniState extends State<EditorEkrani> {
     final aktif = _aktifAltyazi;
     return Column(
       children: [
-        // VİDEO + altyazı overlay
         Stack(
           alignment: Alignment.bottomCenter,
           children: [
@@ -149,8 +142,6 @@ class _EditorEkraniState extends State<EditorEkrani> {
               ),
           ],
         ),
-
-        // OYNAT / DURDUR
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -166,41 +157,42 @@ class _EditorEkraniState extends State<EditorEkrani> {
             Text('  Pozisyon: ${_sureYaz(_aktifPozisyonMs)}'),
           ],
         ),
-
-        // YENİ ALTYAZI GİRME
         Padding(
           padding: const EdgeInsets.all(8),
-          child: Column(children: [
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Altyazı metni',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) => _yeniMetin = v,
-            ),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _baslaYakala,
-                  child: Text(_baslangicMs == null
-                      ? '▶ BAŞLA'
-                      : 'Başla: ${_sureYaz(_baslangicMs!)}'),
+          child: Column(
+            children: [
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Altyazı metni',
+                  border: OutlineInputBorder(),
                 ),
+                onChanged: (v) => _yeniMetin = v,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _bitirVeEkle,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: const Text('⏹ BİTİR'),
-                ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _baslaYakala,
+                      child: Text(_baslangicMs == null
+                          ? '▶ BAŞLA'
+                          : 'Başla: ${_sureYaz(_baslangicMs!)}'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _bitirVeEkle,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green),
+                      child: const Text('⏹ BİTİR'),
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ]),
+            ],
+          ),
         ),
-
-        // EKLENEN ALTYAZILAR LİSTESİ
         Expanded(
           child: ListView.builder(
             itemCount: _altyazilar.length,
@@ -209,7 +201,8 @@ class _EditorEkraniState extends State<EditorEkrani> {
               return ListTile(
                 leading: Text('${i + 1}'),
                 title: Text(a.metin),
-                subtitle: Text('${_sureYaz(a.baslangic)} → ${_sureYaz(a.bitis)}'),
+                subtitle:
+                    Text('${_sureYaz(a.baslangic)} → ${_sureYaz(a.bitis)}'),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () =>
@@ -222,4 +215,3 @@ class _EditorEkraniState extends State<EditorEkrani> {
       ],
     );
   }
-}

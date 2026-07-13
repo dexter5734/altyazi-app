@@ -15,7 +15,7 @@ jobs:
       - name: Repo'yu çek
         uses: actions/checkout@v4
 
-      - name: Java kur (Flutter/Gradle için ŞART)
+      - name: Java kur
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -27,13 +27,8 @@ jobs:
           flutter-version: '3.24.5'
           channel: 'stable'
 
-      - name: Flutter sürümünü doğrula
-        run: flutter --version
-
-      - name: Native Android projesini oluştur (android/ klasörü eksikse üretir)
-        # Sadece lib/ + pubspec.yaml kopyalandığı için android/ yok.
-        # Bu adım CI'da android/build.gradle vb. dosyaları üretir.
-        run: flutter create --platforms=android .
+      - name: Native Android projesini oluştur
+        run: flutter create .
 
       - name: Bağımlılıkları indir
         run: flutter pub get

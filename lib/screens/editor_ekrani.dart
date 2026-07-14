@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import '../models/altyazi.dart';
 import '../services/srt_exports.dart';
+import '../services/asr_service.dart';
 
 class EditorEkrani extends StatefulWidget {
   const EditorEkrani({super.key});
@@ -20,6 +21,8 @@ class _EditorEkraniState extends State<EditorEkrani> {
   String _yeniMetin = '';
   int? _baslangicMs;
   int _aktifPozisyonMs = 0;
+  String? _videoDosyaYolu;
+  bool _islemde = false;
 
   bool get _videoHazir => _kontrolcu?.value.isInitialized ?? false;
 
@@ -27,6 +30,7 @@ class _EditorEkraniState extends State<EditorEkrani> {
     final sonuc = await FilePicker.platform.pickFiles(type: FileType.video);
     if (sonuc == null) return;
     final dosya = sonuc.files.first;
+    _videoDosyaYolu = dosya.path;
     final yedek = _kontrolcu;
     _kontrolcu = VideoPlayerController.file(File(dosya.path!));
     await _kontrolcu!.initialize();
@@ -86,6 +90,26 @@ class _EditorEkraniState extends State<EditorEkrani> {
     await Share.shareXFiles([XFile(yol)], text: 'Altyazı dosyası');
   }
 
+  Future<void> _otomatikAltyazi() async {
+    if (_videoDosyaYolu == null) return;
+    setState(() => _islemde = true);
+    try {
+      final sonuc = await AsrService.transcribe(filePath: _videoDosyaYolu!);
+      if (!mounted) return;
+      setState(() => _altyazilar = sonuc);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${sonuc.length} altyazı satırı üretildi')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Hata: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _islemde = false);
+    }
+  }
+
   String _sureYaz(int ms) {
     final s = (ms / 1000).toStringAsFixed(1);
     return '${s}s';
@@ -97,6 +121,17 @@ class _EditorEkraniState extends State<EditorEkrani> {
       appBar: AppBar(
         title: const Text('Altyazı Stüdyosu'),
         actions: [
+          IconButton(
+            icon: _islemde
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.mic),
+            onPressed: (_videoHazir && !_islemde) ? _otomatikAltyazi : null,
+            tooltip: 'Otomatik altyazı',
+          ),
           IconButton(
             icon: const Icon(Icons.download),
             onPressed: _altyazilar.isEmpty ? null : _srtDisaAktar,
@@ -189,6 +224,27 @@ class _EditorEkraniState extends State<EditorEkrani> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: (_videoHazir && !_islemde)
+                      ? _otomatikAltyazi
+                      : null,
+                  icon: _islemde
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.mic),
+                  label: Text(_islemde
+                      ? 'İşleniyor...'
+                      : '🎙️ Otomatik Altyazı Üret'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple),
+                ),
               ),
             ],
           ),

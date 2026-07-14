@@ -34,6 +34,11 @@ jobs:
           cp -r "$TMP/altyazi_tmp/android" android
           rm -rf "$TMP"
 
+      - name: compileSdk 35'e yükselt (plugin uyumu için)
+        run: |
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 35/' android/app/build.gradle
+
       - name: Bağımlılıkları indir
         run: flutter pub get
 

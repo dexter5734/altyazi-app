@@ -215,3 +215,4 @@ class _EditorEkraniState extends State<EditorEkrani> {
       ],
     );
   }
+}
